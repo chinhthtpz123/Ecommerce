@@ -1,8 +1,30 @@
 'use strict';
-const { CREATED } = require('../core/success.response');
+const { CREATED, SuccessResponse } = require('../core/success.response');
 const AccessService = require('../services/access.service');
 
 class AccessController {
+
+    static handlerRefreshToken = async (req, res, next) => {
+        new SuccessResponse({
+            message: 'Get new tokens',
+            metadata: await AccessService.handlerRefreshToken(req.body.refreshToken)
+        }).send(res)
+    }
+
+    static logout = async(req, res, next) => {
+        new SuccessResponse({
+            message: "Logout successful",
+            metadata: await AccessService.logout(req.keyStore)
+        }).send(res)
+    }
+
+    static login = async (req, res, next) => {
+        new SuccessResponse({
+            message: "Login successful",
+            metadata: await AccessService.login(req.body)
+        }).send(res)
+    }
+
     static signup = async (req, res, next) => {
         new CREATED({
             message: "Registered OK",
