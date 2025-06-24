@@ -9,6 +9,7 @@ const HEADER = {
     API_KEY: "x-api-key",
     CLIENT_ID: 'x-client-id',
     AUTHORIZATION: "authorization",
+    REFRESHTOKEN: 'x-rtoken-id'
 };
  
 const createTokenPair = async ( payload, publicKey, privateKey ) => {
@@ -68,6 +69,44 @@ const authentication = asyncHandler(async (req, res, next) => {
     }
 })
 
+const authenticationV2 = asyncHandler(async (req, res, next) => {
+    const userId = req.headers[HEADER.CLIENT_ID]
+    if(!userId) throw new AuthFailureError('Invaild Request')
+    
+    const foundKey = await KeyTokenService.findById({ userId })
+    if(!foundKey) throw new NotFoundError('Not found key token')
+    
+    const refreshToken = req.headers[HEADER.REFRESHTOKEN]
+    if(refreshToken) {
+        try {
+            const decoded = await verifyJWT(refreshToken, foundKey.privateKey);
+            if (userId !== decoded.userId)
+                throw new AuthFailureError("Invaild userId");
+            req.keyStore = foundKey;
+            req.refreshToken = refreshToken;
+            req.user = decoded;
+            return next();
+        } catch (error) {
+            throw error
+        } 
+    }
+
+    const accessToken = req.headers[HEADER.AUTHORIZATION];
+    if (!accessToken) throw new AuthFailureError("Invaild request");
+
+    try {
+        const decoded = await JWT.verify(accessToken, foundKey.publicKey);
+        if (userId !== decoded.userId)
+            throw new AuthFailureError("Invaild userId");
+        req.keyStore = foundKey;
+        req.user = decoded
+        return next();
+    } catch (error) {
+        throw error;
+    }
+})
+
+
 const verifyJWT = async (token, secretKey) => {
     return await JWT.verify(token, secretKey)
 }
@@ -75,5 +114,6 @@ const verifyJWT = async (token, secretKey) => {
 module.exports = {
     createTokenPair,
     authentication,
-    verifyJWT
+    verifyJWT,
+    authenticationV2
 }

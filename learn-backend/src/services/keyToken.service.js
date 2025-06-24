@@ -26,7 +26,7 @@ class KeyTokenService {
     }
 
     static findById = async ({ userId }) => {
-        return await keyTokenModel.findOne({ shopId: new Types.ObjectId(userId)}).lean()
+        return await keyTokenModel.findOne({ shopId: new Types.ObjectId(userId)})
     }
 
     static removeById = async (_id) => {
